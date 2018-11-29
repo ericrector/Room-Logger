@@ -1,0 +1,10 @@
+/java-service/testapp
+/java-service/*.Dockerfile
+/web/.content
+/java-service/sys-var.env
+/java-service/run-dockerfile.bat
+/java-service/SensorDataImporter/.settings
+/java-service/SensorDataImporter/target
+/java-service/SensorDataImporter/.classpath
+/java-service/SensorDataImporter/.gitignore
+/java-service/SensorDataImporter/.project
