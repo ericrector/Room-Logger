@@ -29,69 +29,62 @@ public class SensorDataImporter {
 	private static final Logger logger = LogManager.getLogger(SensorDataImporter.class);
 
 	private static final String DB_DRIVER = "org.gjt.mm.mysql.Driver";
-	
-	class Config { 
+
+	class Config {
 		// DB
 		String dbHost;
-		int    dbPort = 3306;
+		int dbPort = 3306;
 		String dbUser;
 		String dbPass;
 		String dbName;
-		
+
 		// MQTT
 		String mqttHost;
-		int    mqttPort = 1883;
+		int mqttPort = 1883;
 		String mqttUser = "";
 		String mqttPass = "";
 		String mqttTopic;
-		
+
 		public void validate() throws Exception {
-			
-			
-			logger.info("db host: " + ((null != dbHost)?dbHost:"INVALID") +
-					", port: " + dbPort + 
-					", name: " + ((null != dbName)?dbName:"INVALID") +
-					", user: " + ((null != dbPass)?dbPass:"INVALID") +
-					", pass: " + ((null != dbPass)?"****":"INVALID") 
-			);
-			
-			logger.info("mqtt host: " + ((null != mqttHost)?mqttHost:"INVALID") + 
-					", port: " + mqttPort + 
-					", user: " + ((null != mqttUser)?mqttUser:"N/A") + 
-					", pass: " + ((null != mqttPass)?"****":"N/A") + 
-					", topic: " + ((null != mqttTopic)?mqttTopic:"INVALID")
-					);
-			
+
+			logger.info("db host: " + ((null != dbHost) ? dbHost : "INVALID") + ", port: " + dbPort + ", name: "
+					+ ((null != dbName) ? dbName : "INVALID") + ", user: " + ((null != dbPass) ? dbPass : "INVALID")
+					+ ", pass: " + ((null != dbPass) ? "****" : "INVALID"));
+
+			logger.info("mqtt host: " + ((null != mqttHost) ? mqttHost : "INVALID") + ", port: " + mqttPort + ", user: "
+					+ ((null != mqttUser) ? mqttUser : "N/A") + ", pass: " + ((null != mqttPass) ? "****" : "N/A")
+					+ ", topic: " + ((null != mqttTopic) ? mqttTopic : "INVALID"));
+
 			// check all members for null
-			if( null == dbHost || null == dbHost  || null == dbHost  )
+			if (null == dbHost || null == dbHost || null == dbHost)
 				throw new Exception("invalid configuration");
-			
-			if( null == mqttHost ||  null == mqttTopic  )
+
+			if (null == mqttHost || null == mqttTopic)
 				throw new Exception("invalid configuration");
-			
-			
+
 		}
 	}
-	
+
 	// database
 	Connection db_connection = null;
-	
-	Connection getConnection(Config c) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 
-		if( null == db_connection ) {
+	Connection getConnection(Config c)
+			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+
+		if (null == db_connection) {
 			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			db_connection = DriverManager
-			.getConnection("jdbc:mysql://" + c.dbHost + "/" + c.dbName + "?user=" + c.dbUser + "&password=" + c.dbPass);
+			db_connection = DriverManager.getConnection(
+					"jdbc:mysql://" + c.dbHost + "/" + c.dbName + "?user=" + c.dbUser + "&password=" + c.dbPass);
 		}
-		
+
 		return db_connection;
 	}
-	
+
 	private Object END_SIGNAL = new Object();
-	
+
 	// MQTT
 	CallbackConnection mqtt_connection = null;
-	
+
 	public SensorDataImporter(String[] args) throws Exception {
 
 		Config c = new Config();
@@ -131,14 +124,30 @@ public class SensorDataImporter {
 			}
 		});
 		
+		logger.info("Connecting to database...");
 		// try db connection
-		try {
-			logger.info("Connecting to database...");
-			getConnection(c);
-			logger.info("Database connection ok...");
-		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
-			logger.error( e.getMessage() );
+		boolean connected = false;
+		for (int i=0;i<3;i++) {
+			try {
+				getConnection(c);
+				connected = true;
+				break;
+			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
+				logger.error( e.getMessage() );
+			}
+			
+			logger.info( "Trying again in 10 sec..." );
+			
+			try {
+				Thread.sleep(10 * 1000);
+			} catch (InterruptedException e) {}
+			
 		}
+		
+		if( !connected )
+			return;
+		
+		logger.info("Database connection ok...");
 		
 		MQTT mqtt = new MQTT();
 		
@@ -267,91 +276,89 @@ public class SensorDataImporter {
 		logger.info("Finished!");
 	}
 
-
 	private void readEnvValues(Config c) throws Exception {
-		
+
 		logger.info("Reading system variables...");
-		
+
 		String port;
-		
+
 		Map<String, String> env = System.getenv();
-		
-		if( env.containsKey("DB_HOST"))
+
+		if (env.containsKey("DB_HOST"))
 			c.dbHost = env.get("DB_HOST");
-		
-		if( env.containsKey("DB_PORT")) {
+
+		if (env.containsKey("DB_PORT")) {
 			port = env.get("DB_PORT");
-			if( null != port)
+			if (null != port)
 				c.dbPort = Integer.parseInt(port);
 		}
-		
-		if( env.containsKey("DB_USER"))
-			c.dbUser = env.get("DB_USER");	
-		
-		if( env.containsKey("DB_PASS"))
+
+		if (env.containsKey("DB_USER"))
+			c.dbUser = env.get("DB_USER");
+
+		if (env.containsKey("DB_PASS"))
 			c.dbPass = env.get("DB_PASS");
-		
-		if( env.containsKey("DB_NAME"))
+
+		if (env.containsKey("DB_NAME"))
 			c.dbName = env.get("DB_NAME");
-		
-		if( env.containsKey("MQTT_HOST"))
+
+		if (env.containsKey("MQTT_HOST"))
 			c.mqttHost = env.get("MQTT_HOST");
-		
-		if( env.containsKey("MQTT_PORT")) {
+
+		if (env.containsKey("MQTT_PORT")) {
 			port = env.get("MQTT_PORT");
-			if( null != port)
+			if (null != port)
 				c.mqttPort = Integer.parseInt(port);
 		}
-		
-		if( env.containsKey("MQTT_USER"))
+
+		if (env.containsKey("MQTT_USER"))
 			c.mqttUser = env.get("MQTT_USER");
-		
-		if( env.containsKey("MQTT_PASS"))
+
+		if (env.containsKey("MQTT_PASS"))
 			c.mqttPass = env.get("MQTT_PASS");
-		
-		if( env.containsKey("MQTT_TOPIC"))
+
+		if (env.containsKey("MQTT_TOPIC"))
 			c.mqttTopic = env.get("MQTT_TOPIC");
 
 	}
-	
-	
+
 	private void readconfigFile(Config c, String configFile) throws Exception {
-		
+
 		logger.info("Reading from configuration file ...");
-		
-		logger.warn("readconfigFile() not implemented"); 
-		
+
+		logger.warn("readconfigFile() not implemented");
+
 	}
 
-	protected void importMessage(Connection conn, SensorData sensorData) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+	protected void importMessage(Connection conn, SensorData sensorData)
+			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 
-		logger.debug( "Location : " + sensorData.getLocation() + ", Data : " + sensorData.toJson()  );
+		logger.debug("Location : " + sensorData.getLocation() + ", Data : " + sensorData.toJson());
 
-		String query = "INSERT INTO Sensor(room, name, epoch, temperature, humidity) VALUES "
-		+ "(?,?,?,?,?)";
-		
+		String query = "INSERT INTO Sensor(room, name, epoch, temperature, humidity) VALUES " + "(?,?,?,?,?)";
+
 //		String query = "INSERT INTO \"Sensor\"(\"room\", \"name\", \"epoch\", \"temperature\", \"humidity\") VALUES "
 //				+ "(?,?,?,?,?,?)";
-		
-		// create the mysql insert preparedstatement
-	      PreparedStatement preparedStmt = conn.prepareStatement(query);
-	      preparedStmt.setString (1, sensorData.getLocation());
-	      preparedStmt.setString (2, sensorData.getSensor_name());
-	      preparedStmt.setLong(3, sensorData.getEpoch_sec());
-	      preparedStmt.setFloat(4, sensorData.getTemperature());
-	      preparedStmt.setFloat(5, sensorData.getHumidity());
 
-	      // execute the preparedstatement
-	      preparedStmt.execute();
-	      
+		// create the mysql insert preparedstatement
+		PreparedStatement preparedStmt = conn.prepareStatement(query);
+		preparedStmt.setString(1, sensorData.getLocation());
+		preparedStmt.setString(2, sensorData.getSensor_name());
+		preparedStmt.setLong(3, sensorData.getEpoch_sec());
+		preparedStmt.setFloat(4, sensorData.getTemperature());
+		preparedStmt.setFloat(5, sensorData.getHumidity());
+
+		// execute the preparedstatement
+		preparedStmt.execute();
+
 	}
 
-	public static void main(String[] args) { 
+	public static void main(String[] args) {
 		logger.info("Entering SensorDataImporter.");
 		try {
-			new SensorDataImporter( args );
+			new SensorDataImporter(args);
 		} catch (Exception e) {
-			logger.error( "Error: " + e.getMessage() );
+			logger.error("Error: " + e.getMessage());
 		}
 		logger.info("Exiting SensorDataImporter.");
 	}
