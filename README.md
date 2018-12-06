@@ -1,8 +1,7 @@
-# About this project
-
 ### Note
+I am still in the process to getting everything working, so this project is not yet complete
 
-I am still in the process to getting everything working, so this project is not yet complete.
+# About this project
 
 ## Why 
 
