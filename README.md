@@ -1,5 +1,9 @@
 # About this project
 
+### Note
+
+I am still in the process to getting everything working, so this project is not yet complete.
+
 ## Why 
 
 The reason for this project is two-fold.  First and main is I found that mold was forming in the corners of my bedroom in a new flat that I am renting and I wanted to find the cause. To do this I would have to track the room temperature and humididy. After analying the data you can determine is you have heat more, air the room more or if there moisture coming thought the wall.
@@ -53,7 +57,9 @@ Then when it all works:
 
 Details at soon to come...
 
-# Next steps are to use
+# Next steps 
+
+The next steps are to use:
 
 - Use Go for the sevice instead of java.
 - Use Spring Boot, GraphQL and Highcharts to access and visualize the data.
