@@ -37,9 +37,9 @@ services:
             - "1883:1883"
             - "9001:9001"
             
-    svc:
+    importer:
         build: ./java-service/.
-        container_name: svc         
+        container_name: importer
         environment:
             DB_HOST: db
             DB_USER: user
