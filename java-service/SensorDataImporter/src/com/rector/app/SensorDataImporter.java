@@ -10,26 +10,22 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.util.Throwables;
 import org.fusesource.hawtbuf.Buffer;
 import org.fusesource.hawtbuf.UTF8Buffer;
 import org.fusesource.mqtt.client.Callback;
 import org.fusesource.mqtt.client.CallbackConnection;
 import org.fusesource.mqtt.client.Listener;
 import org.fusesource.mqtt.client.MQTT;
-import org.fusesource.mqtt.client.Message;
 import org.fusesource.mqtt.client.QoS;
 import org.fusesource.mqtt.client.Topic;
 
-import com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException;
 import com.rector.app.utility.SensorData;
 
 public class SensorDataImporter {
 
 	private static final Logger logger = LogManager.getLogger(SensorDataImporter.class);
 
-	private static final String DB_DRIVER = "org.gjt.mm.mysql.Driver";
-
+	
 	class Config {
 		// DB
 		String dbHost;
@@ -72,9 +68,9 @@ public class SensorDataImporter {
 			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 
 		if (null == db_connection) {
-			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			db_connection = DriverManager.getConnection(
-					"jdbc:mysql://" + c.dbHost + "/" + c.dbName + "?user=" + c.dbUser + "&password=" + c.dbPass);
+			String connStr = "jdbc:mysql://" + c.dbHost + "/" + c.dbName + "?user=" + c.dbUser + "&password=" + c.dbPass;
+			logger.info( connStr );
+			db_connection = DriverManager.getConnection( connStr );
 		}
 
 		return db_connection;
@@ -87,6 +83,8 @@ public class SensorDataImporter {
 
 	public SensorDataImporter(String[] args) throws Exception {
 
+		Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		
 		Config c = new Config();
 		// read this in as default
 		readEnvValues(c);
@@ -129,9 +127,10 @@ public class SensorDataImporter {
 		boolean connected = false;
 		for (int i=0;i<3;i++) {
 			try {
-				getConnection(c);
-				connected = true;
-				break;
+				if( null != getConnection(c) ) {
+					connected = true;
+					break;
+				}
 			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
 				logger.error( e.getMessage() );
 			}
@@ -196,8 +195,6 @@ public class SensorDataImporter {
 					// TODO Add to a worker queue and do this work there!
 					importMessage( getConnection(c), new SensorData( parts[1], messagePayload ) );
 					
-				} catch (MySQLIntegrityConstraintViolationException e) {
-					logger.error( "Duplaicate : " + e.getMessage() );
 				} catch (UnsupportedEncodingException e) {
 					logger.error( e.getMessage() );
 				} catch (Exception e) {
