@@ -8,28 +8,35 @@ services:
 #            - "80:80"
 #        depends_on:
 #            - db
-#
-#    db:
-#        image: mysql
-#        ports: 
-#            - "3306:3306"
-#        environment:
-#            MYSQL_ROOT_HOST: %
-#            MYSQL_ROOT_PASSWORD: test
-#            MYSQL_USER: user
-#            MYSQL_PASSWORD: test
-#
-#    phpmyadmin:
-#        image: phpmyadmin/phpmyadmin
-#        depends_on:
-#            - db
-#        ports:
-#            - 8888:80
-#        environment:
-#            MYSQL_ROOT_PASSWORD: test
-#            MYSQL_USER: user
-#            MYSQL_PASSWORD: test
-#            
+
+    db:
+        image: mysql
+        ports: 
+            - "3306:3306"
+        environment:
+            #MYSQL_ROOT_HOST: %
+            MYSQL_ROOT_PASSWORD: test
+            MYSQL_USER: user
+            MYSQL_PASSWORD: test
+            
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        ports:
+            - 8888:80
+        environment:
+            MYSQL_ROOT_PASSWORD: test
+            MYSQL_USER: user
+            MYSQL_PASSWORD: test
+        depends_on:
+            - db
+            
+    mqtt:
+        image: toke/mosquitto
+        restart: always
+        ports:
+            - "1883:1883"
+            - "9001:9001"
+            
     svc:
         build: ./java-service/.
         container_name: svc         
@@ -38,14 +45,9 @@ services:
             DB_USER: user
             DB_PASS: test
             DB_NAME: myDb
-#        depends_on:
-#            - mqtt
-#            - db
-#
-#    mqtt:
-#        image: toke/mosquitto
-#        restart: always
-#        ports:
-#            - "1883:1883"
-#            - "9001:9001"
-#
+            MQTT_HOST: mqtt
+            MQTT_PORT: 1883
+            MQTT_TOPIC: /my/topic
+        depends_on:
+            - mqtt
+            - db
