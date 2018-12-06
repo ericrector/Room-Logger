@@ -5,13 +5,13 @@ I am still in the process to getting everything working, so this project is not 
 
 ## Why 
 
-The reason for this project is two-fold.  First and main is I found that mold was forming in the corners of my bedroom in a new flat that I am renting and I wanted to find the cause. To do this I would have to track the room temperature and humididy. After analying the data you can determine is you have heat more, air the room more or if there moisture coming thought the wall.
+The reason for this project is two-fold.  First and main reason is, is that I found that mold was forming in the corners of my bedroom in a new flat that I am renting and I wanted to find the cause. To do this I would have to track the room temperature and humididy. After analysing the data I could determine is I would have heat more, air the room more or if there moisture coming thought the wall.
 
-Second is I love programming and automation so I thought this would be a great change to combined them all together to produce a usefull soultion.
+Second is that I love programming, learing new tech and automation so I thought this would be a great change to combined them all together to produce a usefull soultion.
 
 ## Prereqs
 
-To get things running you need Java, Maven and Docker. Which version.... this topic always sucks. I have gone through so many tutoial and they never work because my version is newer than the versions used when the tutioial was written.  I don't really have a solution other that you should know a bit of:
+To get things running you need Java, Maven and Docker. Which version ??? this topic always sucks. I have gone through so many tutoial and they never work because my version is newer than the versions used when the tutioial was written.  I don't really have a solution other that you should know a bit of:
 
 - Java
 - Maven
