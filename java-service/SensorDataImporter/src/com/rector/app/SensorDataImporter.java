@@ -5,7 +5,9 @@ import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +27,6 @@ public class SensorDataImporter {
 
 	private static final Logger logger = LogManager.getLogger(SensorDataImporter.class);
 
-	
 	class Config {
 		// DB
 		String dbHost;
@@ -68,9 +69,10 @@ public class SensorDataImporter {
 			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 
 		if (null == db_connection) {
-			String connStr = "jdbc:mysql://" + c.dbHost + "/" + c.dbName + "?user=" + c.dbUser + "&password=" + c.dbPass;
-			logger.info( connStr );
-			db_connection = DriverManager.getConnection( connStr );
+			String connStr = "jdbc:mysql://" + c.dbHost + "/" + c.dbName + "?user=" + c.dbUser + "&password="
+					+ c.dbPass;
+			logger.info(connStr);
+			db_connection = DriverManager.getConnection(connStr);
 		}
 
 		return db_connection;
@@ -83,89 +85,93 @@ public class SensorDataImporter {
 
 	public SensorDataImporter(String[] args) throws Exception {
 
-		Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
-		
-		Config c = new Config();
-		// read this in as default
-		readEnvValues(c);
-		
-		String configFile = null;
-		
-		if( 0 < args.length ) {
-			configFile = new String( args[args.length-1] ); // last one is config-file
-		
-			// over-ride values with config 
-			readconfigFile(c, configFile);
-			
-			// over-ride those with command line args.
-			//readconfigCLI(c, args);
-		
-		}
-		
-		c.validate();
-		
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
 
 				logger.info("Shuting down ...");
 
 				END_SIGNAL.notifyAll();
-				
+
 				logger.debug("Waiting ...");
 				try {
 					Thread.sleep(10000);
 				} catch (InterruptedException e) {
-					logger.error( e.getMessage() );
+					logger.error(e.getMessage());
 				}
-				
+
 				logger.info("Finished ...");
 			}
 		});
 		
+		Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+
+		Config c = new Config();
+		// read this in as default
+		readEnvValues(c);
+
+		String configFile = null;
+
+		if (0 < args.length) {
+			configFile = new String(args[args.length - 1]); // last one is config-file
+
+			// over-ride values with config
+			readconfigFile(c, configFile);
+
+			// over-ride those with command line args.
+			// readconfigCLI(c, args);
+
+		}
+
+		c.validate();
+
 		logger.info("Connecting to database...");
 		// try db connection
 		boolean connected = false;
-		for (int i=0;i<3;i++) {
+		for (int i = 0; i < 3; i++) {
 			try {
-				if( null != getConnection(c) ) {
+				if (null != getConnection(c)) {
 					connected = true;
 					break;
 				}
 			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
-				logger.error( e.getMessage() );
+				logger.error(e.getMessage());
 			}
-			
-			logger.info( "Trying again in 10 sec..." );
-			
+
+			logger.info("Trying again in 10 sec...");
+
 			try {
 				Thread.sleep(10 * 1000);
-			} catch (InterruptedException e) {}
-			
+			} catch (InterruptedException e) {
+			}
+
 		}
-		
-		if( !connected )
+
+		if (!connected)
 			return;
-		
+
 		logger.info("Database connection ok...");
-		
+
+		// see if table exists and create it if needed.
+		prepareDatabase(getConnection(c));
+
 		MQTT mqtt = new MQTT();
-		
+
 		try {
 			mqtt.setHost(c.mqttHost, c.mqttPort);
 		} catch (URISyntaxException e) {
-			logger.error( e.getMessage() );
+			logger.error(e.getMessage());
 			return;
 		}
 
 		logger.info("Connecting to broker...");
-		
+
 		mqtt_connection = mqtt.callbackConnection();
 
 		mqtt_connection.listener(new Listener() {
 
 			@Override
 			public void onFailure(Throwable arg0) {
-				logger.error("Connectin to broker failed : " + c.mqttHost + ":" + c.mqttPort );
+				logger.error("Connectin to broker failed : " + c.mqttHost + ":" + c.mqttPort);
 				END_SIGNAL.notifyAll();
 			}
 
@@ -183,50 +189,50 @@ public class SensorDataImporter {
 			public void onPublish(UTF8Buffer topic, Buffer payload, Runnable ack) {
 				// You can now process a received message from a topic.
 				// Once process execute the ack runnable.
-				logger.debug("Received message : " + payload);			
-				
+				logger.debug("Received message : " + payload);
+
 				ack.run();
-				
+
 				try {
-					
-					String messagePayload = new String(payload.toByteArray(), "UTF-8");		
+
+					String messagePayload = new String(payload.toByteArray(), "UTF-8");
 					String[] parts = topic.toString().split("/");
 
 					// TODO Add to a worker queue and do this work there!
-					importMessage( getConnection(c), new SensorData( parts[1], messagePayload ) );
-					
+					importMessage(getConnection(c), new SensorData(parts[1], messagePayload));
+
 				} catch (UnsupportedEncodingException e) {
-					logger.error( e.getMessage() );
+					logger.error(e.getMessage());
 				} catch (Exception e) {
-					logger.error( e.getMessage() );
+					logger.error(e.getMessage());
 				}
-				
-				
+
 			}
 
 		});
 
-		mqtt_connection.connect( new Callback<Void>() {
-			
+		mqtt_connection.connect(new Callback<Void>() {
+
 			@Override
 			public void onSuccess(Void arg0) {
 				logger.debug("Broker connection ok!");
-				
+
 				// Subscribe to a topic
-		        Topic[] topics = {new Topic(c.mqttTopic, QoS.AT_LEAST_ONCE)};
-		        
-		        mqtt_connection.subscribe(topics, new Callback<byte[]>() {
-		            public void onSuccess(byte[] qoses) {
-		            	logger.debug("Subscribe sucessfull!");
-		            }
-		            public void onFailure(Throwable value) {
-		            	logger.error("Subscribe failed!");
-		            	END_SIGNAL.notifyAll();   
-		            }
-		        });
-				
+				Topic[] topics = { new Topic(c.mqttTopic, QoS.AT_LEAST_ONCE) };
+
+				mqtt_connection.subscribe(topics, new Callback<byte[]>() {
+					public void onSuccess(byte[] qoses) {
+						logger.debug("Subscribe sucessfull!");
+					}
+
+					public void onFailure(Throwable value) {
+						logger.error("Subscribe failed!");
+						END_SIGNAL.notifyAll();
+					}
+				});
+
 			}
-			
+
 			@Override
 			public void onFailure(Throwable arg0) {
 				logger.error("Broker connection failed!");
@@ -234,7 +240,6 @@ public class SensorDataImporter {
 			}
 		});
 
-		
 		synchronized (END_SIGNAL) {
 			try {
 				END_SIGNAL.wait();
@@ -243,34 +248,55 @@ public class SensorDataImporter {
 			}
 		}
 
-		
-		mqtt_connection.disconnect( new Callback<Void>() {
-			
+		mqtt_connection.disconnect(new Callback<Void>() {
+
 			@Override
 			public void onSuccess(Void arg0) {
 				logger.debug("Disconnected!");
-				
+
 			}
-			
+
 			@Override
 			public void onFailure(Throwable arg0) {
 				logger.error("Could not disconnected!");
-				
+
 			}
 		});
-		
+
 		mqtt_connection = null;
-		
+
 		mqtt = null;
-		
+
 		// close db!
 		try {
 			getConnection(c).close();
 		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
-			logger.error( e.getMessage() );
+			logger.error(e.getMessage());
 		}
-		
+
 		logger.info("Finished!");
+	}
+
+	private void prepareDatabase(Connection conn) throws SQLException {
+
+		logger.info("Checking for table...");
+		String query = "SELECT * FROM information_schema.tables WHERE table_schema = 'myDb' AND table_name = 'Sensor' LIMIT 1;";
+
+		// create the java statement
+		Statement st = conn.createStatement();
+
+		if( 0 == st.getMaxRows() ) {
+			logger.info("Creating table.");
+			// create the table
+			query = "CREATE TABLE `myDb`.`Sensor` ( " + "`id` INT NOT NULL AUTO_INCREMENT, "
+					+ "`room` VARCHAR(255) NOT NULL , " + "`name` VARCHAR(255) NOT NULL , " + "`epoch` INT NOT NULL , "
+					+ "`temperature` FLOAT NOT NULL , " + "`humidity` FLOAT NOT NULL , INDEX (`id`)) " + "ENGINE = InnoDB;";
+	
+			PreparedStatement preparedStmt = conn.prepareStatement(query);
+			preparedStmt.execute();
+		} else
+			logger.info("Table exisits.");
+
 	}
 
 	private void readEnvValues(Config c) throws Exception {
