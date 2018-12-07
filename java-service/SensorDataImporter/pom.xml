@@ -63,11 +63,6 @@
 			<version>1.1.2</version>
 		</dependency>
 		<dependency>
-			<groupId>com.rector.app.utility</groupId>
-			<artifactId>SensorData</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>8.0.13</version>

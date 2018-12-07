@@ -358,21 +358,21 @@ public class SensorDataImporter {
 
 		logger.debug("Location : " + sensorData.getLocation() + ", Data : " + sensorData.toJson());
 
-		String query = "INSERT INTO Sensor(room, name, epoch, temperature, humidity) VALUES " + "(?,?,?,?,?)";
-
-//		String query = "INSERT INTO \"Sensor\"(\"room\", \"name\", \"epoch\", \"temperature\", \"humidity\") VALUES "
-//				+ "(?,?,?,?,?,?)";
-
-		// create the mysql insert preparedstatement
-		PreparedStatement preparedStmt = conn.prepareStatement(query);
-		preparedStmt.setString(1, sensorData.getLocation());
-		preparedStmt.setString(2, sensorData.getSensor_name());
-		preparedStmt.setLong(3, sensorData.getEpoch_sec());
-		preparedStmt.setFloat(4, sensorData.getTemperature());
-		preparedStmt.setFloat(5, sensorData.getHumidity());
-
-		// execute the preparedstatement
-		preparedStmt.execute();
+//		String query = "INSERT INTO Sensor(room, name, epoch, temperature, humidity) VALUES " + "(?,?,?,?,?)";
+//
+////		String query = "INSERT INTO \"Sensor\"(\"room\", \"name\", \"epoch\", \"temperature\", \"humidity\") VALUES "
+////				+ "(?,?,?,?,?,?)";
+//
+//		// create the mysql insert preparedstatement
+//		PreparedStatement preparedStmt = conn.prepareStatement(query);
+//		preparedStmt.setString(1, sensorData.getLocation());
+//		preparedStmt.setString(2, sensorData.getSensor_name());
+//		preparedStmt.setLong(3, sensorData.getEpoch_sec());
+//		preparedStmt.setFloat(4, sensorData.getTemperature());
+//		preparedStmt.setFloat(5, sensorData.getHumidity());
+//
+//		// execute the preparedstatement
+//		preparedStmt.execute();
 
 	}
 

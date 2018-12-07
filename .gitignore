@@ -8,4 +8,4 @@
 /java-service/SensorDataImporter/.classpath
 /java-service/SensorDataImporter/.gitignore
 /java-service/SensorDataImporter/.project
-/java-service/SensorDataImporter/setenv.bat
+/java-service/SensorDataImporter/set-env.bat
