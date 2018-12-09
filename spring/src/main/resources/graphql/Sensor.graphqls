@@ -1,0 +1,28 @@
+ 
+type Sensor {
+
+	id: String!
+	room: String!
+	name: String!
+	epoch: Int!
+	temperature: Float!
+	humidity: Float!
+}
+
+
+schema {
+  query: Queries
+}
+
+type Queries {
+
+  allsensors: [Sensor]!
+
+  sensors(filter: InputSensor): [Sensor!]
+  
+}
+
+input InputSensor {
+	#
+    room: String
+}

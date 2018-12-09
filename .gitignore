@@ -9,3 +9,7 @@
 /java-service/SensorDataImporter/.gitignore
 /java-service/SensorDataImporter/.project
 /java-service/SensorDataImporter/set-env.bat
+/spring/.settings
+/spring/target
+/spring/.classpath
+/spring/.project
